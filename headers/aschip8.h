@@ -1,16 +1,14 @@
-#ifndef ASCHIP8
-#define ASCHIP8
+#ifndef ASCHIP8_H 
+#define ASCHIP8_H
 #include <cstdint>
 
 #include "display.h"
 
 #define REGISTERS 16
 #define MEM_SIZE 4096
-#define SCREEN_ROWS 32
-#define SCREEN_COLS 64
-#define SCREEN_SIZE (SCREEN_ROWS * SCREEN_COLS)
 #define STACK_SIZE 16
 #define BUTTON_NUM 16
+
 
 class AsChip8{
 	private:
@@ -114,7 +112,7 @@ class AsChip8{
 	/*9xy0 - SNE Vx, Vy
 		Skip next instruction if Vx != Vy.
 		The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.*/
-		void skip_not_equal_V(uint8_t);
+		void skip_not_equal_V(uint8_t, uint8_t);
 
 	/*Annn - LD I, addr
 		Set I = nnn.
@@ -191,6 +189,9 @@ class AsChip8{
 		The interpreter reads values from memory starting at location I into registers V0 through Vx.*/
 		void load_registers(uint8_t);
 
+		void decode_and_execute(uint16_t);
+
+		void print_state();
 };
 
 #endif
