@@ -2,15 +2,19 @@
 #define ASCHIP8
 #include <cstdint>
 
+#include "display.h"
+
 #define REGISTERS 16
 #define MEM_SIZE 4096
 #define SCREEN_ROWS 32
 #define SCREEN_COLS 64
 #define SCREEN_SIZE (SCREEN_ROWS * SCREEN_COLS)
 #define STACK_SIZE 16
+#define BUTTON_NUM 16
 
-class AschChip8{
+class AsChip8{
 	private:
+		Display display;
 		uint8_t V[REGISTERS];	
 		uint16_t I;
 		uint8_t memory[MEM_SIZE];
@@ -20,8 +24,9 @@ class AschChip8{
 		uint16_t program_counter;
 		uint16_t stack[STACK_SIZE];
 		uint8_t stack_pointer;
+		uint8_t pressed[BUTTON_NUM];
 	public:
-		AschChip8();
+		AsChip8();
 
 		/*00E0 - Clear the display*/
 		void cls();
