@@ -9,14 +9,14 @@
 
 class Display{
 	private:
-		const uint8_t (* display)[SCREEN_SIZE];
+		const uint8_t * display;
 		SDL_Window * window;
 		SDL_Renderer * renderer;
 		SDL_Rect rect;
 		uint8_t pix_size;
 		uint8_t scale;
 	public:
-		Display(const uint8_t (*)[SCREEN_SIZE]);
+		Display(const uint8_t *);
 		~Display();
 		void draw();
 };

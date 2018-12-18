@@ -1,12 +1,12 @@
 #include <cstdint>
 #include <ctime>
 #include <cstdlib>
-#include <iostream>
+#include <cstdio>
 
 #include "aschip8.h"
 #include "display.h"
 
-AsChip8::AsChip8() : I(0), delay_timer(0), sound_timer(0), program_counter(0x200), stack_pointer(0), display(&screen_mem){
+AsChip8::AsChip8(const char * filename) : I(0), delay_timer(0), sound_timer(0), program_counter(0x200), stack_pointer(0), display(&screen_mem[0]){
 	for(uint8_t i = 0; i < REGISTERS; ++i){
 		V[i] = 0;	
 	}
@@ -23,10 +23,14 @@ AsChip8::AsChip8() : I(0), delay_timer(0), sound_timer(0), program_counter(0x200
 		pressed[i] = 0;
 	}
 	srand(time(NULL));
+	FILE * program = fopen(filename, "rb");
+	int i = 0;
+	while((fread(&memory[program_counter + i++], 1, 1, program))){
+	}
 }
 
 void AsChip8::cls(){
-	for(uint8_t i = 0; i < SCREEN_SIZE; ++i){
+	for(uint16_t i = 0; i < SCREEN_SIZE; ++i){
 		screen_mem[i] = 0;
 	}
 }
@@ -46,17 +50,17 @@ void AsChip8::call(uint16_t mem_location){
 
 void AsChip8::skip_equal(uint8_t x, uint8_t imm){
 	if(V[x] == imm)
-		++program_counter;
+		program_counter+=2;
 }
 
 void AsChip8::skip_not_equal(uint8_t x, uint8_t imm){
 	if(V[x] != imm)
-		++program_counter;
+		program_counter+=2;
 }
 
 void AsChip8::skip_equal_V(uint8_t x, uint8_t y){
 	if(V[x] == V[y])
-		++program_counter;
+		program_counter+=2;
 }
 
 void AsChip8::load(uint8_t x, uint8_t imm){
@@ -109,7 +113,7 @@ void AsChip8::shift_left(uint8_t x){
 
 void AsChip8::skip_not_equal_V(uint8_t x, uint8_t y){
 	if(V[x] != V[y])
-		++program_counter;
+		program_counter+=2;
 }
 
 void AsChip8::load_I(uint16_t mem){
@@ -126,27 +130,32 @@ void AsChip8::random_number(uint8_t x, uint8_t imm){
 
 void AsChip8::draw(uint8_t x, uint8_t y, uint8_t n){
 	V[0xF] = 0;
-	uint8_t x_pos;
-	uint8_t y_pos;
-	for(uint8_t i = 0; i < n; ++i){
-		for(uint8_t j = 0; j < 8; ++j){
-			x_pos = (x + i) % SCREEN_ROWS;
-			y_pos = ((y + j) * SCREEN_ROWS) % SCREEN_COLS;
-			if((screen_mem[x_pos + y_pos] ^= memory[I+i]) == 0 && screen_mem[x_pos + y_pos] == 1){
+	uint8_t byte;
+	uint8_t bit;
+	int x_val;
+	int y_val;
+	for(int i = 0; i < n; ++i){
+		byte = memory[I+i];
+		for(int j = 0; j < 8; ++j){
+			x_val =(V[x]+(7-j)) % SCREEN_COLS;
+			y_val = ((V[y] + i) % SCREEN_ROWS) * SCREEN_COLS;
+			bit = (byte >> j) & 0x1;
+			if(bit == 1 && screen_mem[x_val + y_val] == 1){
 				V[0xF] = 1;
 			}
+			screen_mem[x_val + y_val] = screen_mem[x_val + y_val] ^ bit;
 		}
 	}
 }
 
 void AsChip8::skip_pressed(uint8_t x){
 	if(pressed[V[x]] == 1)
-		++program_counter;
+		program_counter+=2;
 }
 
 void AsChip8::skip_not_pressed(uint8_t x){
 	if(pressed[V[x]] == 0)
-		++program_counter;
+		program_counter+=2;
 }
 
 void AsChip8::load_V_DT(uint8_t x){
@@ -202,6 +211,10 @@ void AsChip8::load_registers(uint8_t x){
 }
 
 void AsChip8::print_state(){
+	for(int i = 0; i < REGISTERS; ++i){
+		printf("V[0x%01x]=0x%02x\n", i, V[i]);
+	}
+	printf("I=0x%04x\n", I);
 }
 
 void AsChip8::decode_and_execute(uint16_t instruction){
@@ -230,9 +243,7 @@ void AsChip8::decode_and_execute(uint16_t instruction){
 				} else if ((instruction & 0xF007) == 0xF007){
 					load_V_DT(arg);
 				} else {
-					std::cout << "ERROR!" <<std::endl;
 					print_state();
-					return 1;
 				}
 			} else if ((instruction & 0xE000) == 0xE000){
 				uint8_t arg	= (instruction & 0x0F00)>>8;
@@ -241,13 +252,55 @@ void AsChip8::decode_and_execute(uint16_t instruction){
 				} else if ((instruction & 0xE09E) == 0xE09E){
 					skip_pressed(arg);
 				} else {
-					std::cout << "ERROR!" <<std::endl;
 					print_state();
-					return 1;
 				}
 			} else if ((instruction & 0xD000) == 0xD000){
+				//printf("draw: 0x%04x 0x%04x 0x%04x\n",(instruction & 0x0F00)>>8, (instruction & 0x00F0)>>4, instruction & 0x000F);
 				draw((instruction & 0x0F00)>>8, (instruction & 0x00F0)>>4, instruction & 0x000F);
 			} else if ((instruction & 0xC000) == 0xC000){
 				random_number((instruction & 0x0F00)>>8, (instruction & 0x00FF));
+			} else if ((instruction & 0xB000) == 0xB000){
+				jump_with_offset(instruction & 0x0FFF);
+			} else if ((instruction & 0xA000) == 0xA000){
+				load_I(instruction & 0x0FFF);
+			} else if ((instruction & 0x9000) == 0x9000){
+				skip_not_equal_V((instruction & 0x0F00)>>8, (instruction & 0x00F0)>>4);
+			} else if ((instruction & 0x8000) == 0x8000){
+				uint8_t arg1 = (instruction & 0x0F00)>>8;
+				uint8_t arg2 = (instruction & 0x00F0)>>4;
+				if((instruction & 0x000E) == 0x000E){
+					shift_left(arg1);
+				} else if ((instruction & 0x0007) == 0x0007){
+					subn_V(arg1, arg2);
+				} else if ((instruction & 0x0006) == 0x0006){
+					shift_right(arg1);
+				} else if ((instruction & 0x0005) == 0x0005){
+					sub_V(arg1, arg2);
+				} else if ((instruction & 0x0004) == 0x0004){
+					add_V(arg1, arg2);
+				} else if ((instruction & 0x0003) == 0x0003){
+					xor_V(arg1, arg2);
+				} else if ((instruction & 0x0002) == 0x0002){
+					and_V(arg1, arg2);
+				} else if ((instruction & 0x0001) == 0x0001){
+					or_V(arg1, arg2);
+				} else {
+					printf("load_V 0x%02x 0x%02x\n", arg1, arg2);
+					load_V(arg1, arg2);
+				}
+			} else if ((instruction & 0x7000) == 0x7000){
+				add((instruction & 0x0F00)>>8, (instruction & 0x00FF));				
+			} else if ((instruction & 0x6000) == 0x6000){
+				load((instruction & 0x0F00)>>8, (instruction & 0x00FF));				
+			} else if ((instruction & 0x5000) == 0x5000){
+				skip_equal_V((instruction & 0x0F00)>>8, (instruction & 0x00F0)>>4);
+			} else if ((instruction & 0x4000) == 0x4000){
+				skip_not_equal((instruction & 0x0F00)>>8, instruction & 0x00FF);
+			} else if ((instruction & 0x3000) == 0x3000){
+				skip_equal((instruction & 0x0F00)>>8, instruction & 0x00FF);
+			} else if ((instruction & 0x2000) == 0x2000){
+				call(instruction & 0x0FFF);
+			} else if ((instruction & 0x1000) == 0x1000){
+				jp(instruction & 0x0FFF);
 			}
 }

@@ -12,19 +12,19 @@
 
 class AsChip8{
 	private:
-		Display display;
 		uint8_t V[REGISTERS];	
 		uint16_t I;
-		uint8_t memory[MEM_SIZE];
 		uint8_t screen_mem[SCREEN_SIZE];
 		uint8_t delay_timer;
 		uint8_t sound_timer;
-		uint16_t program_counter;
 		uint16_t stack[STACK_SIZE];
 		uint8_t stack_pointer;
 		uint8_t pressed[BUTTON_NUM];
 	public:
-		AsChip8();
+		Display display;
+		uint16_t program_counter;
+		uint8_t memory[MEM_SIZE];
+		AsChip8(const char *);
 
 		/*00E0 - Clear the display*/
 		void cls();
