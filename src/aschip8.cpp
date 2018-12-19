@@ -6,7 +6,7 @@
 #include "aschip8.h"
 #include "display.h"
 
-AsChip8::AsChip8(const char * filename) : I(0), delay_timer(0), sound_timer(0), program_counter(0x200), stack_pointer(0), display(&screen_mem[0]){
+AsChip8::AsChip8(const char * filename) : I(0), delay_timer(0), sound_timer(0), program_counter(0x200), stack_pointer(0), display(&screen_mem[0]), update_screen(false){
 	for(uint8_t i = 0; i < REGISTERS; ++i){
 		V[i] = 0;	
 	}
@@ -27,12 +27,37 @@ AsChip8::AsChip8(const char * filename) : I(0), delay_timer(0), sound_timer(0), 
 	int i = 0;
 	while((fread(&memory[program_counter + i++], 1, 1, program))){
 	}
+
+	uint8_t font_set[] = {
+		0xf0, 0x90, 0x90, 0x90, 0xf0, /*0*/
+		0x20, 0x60, 0x20, 0x20, 0x70,	/*1*/
+		0xf0, 0x10, 0xf0, 0x80, 0xf0, /*2*/
+		0xf0, 0x10, 0xf0, 0x10, 0xf0, /*3*/
+		0x90, 0x90, 0xf0, 0x10, 0x10, /*4*/
+		0xf0, 0x80, 0xf0, 0x10, 0xf0, /*5*/
+		0xf0, 0x80, 0xf0, 0x90, 0xf0, /*6*/
+		0xf0, 0x10, 0x20, 0x40, 0x40, /*7*/
+		0xf0, 0x90, 0xf0, 0x90, 0xf0, /*8*/
+		0xf0, 0x90, 0xf0, 0x10, 0xf0, /*9*/
+		0xf0, 0x90, 0xf0, 0x90, 0x90, /*A*/
+		0xe0, 0x90, 0xe0, 0x90, 0xe0, /*B*/
+		0xf0, 0x80, 0x80, 0x80, 0xf0, /*C*/
+		0xe0, 0x90, 0x90, 0x90, 0xe0, /*D*/
+		0xf0, 0x80, 0xf0, 0x80, 0xf0, /*E*/
+		0xf0, 0x80, 0xf0, 0x80, 0x80  /*F*/
+	};
+
+	for(int i = 0; i < FONT_SIZE * FONTSET_LEN; ++i){
+		memory[i] = font_set[i];
+	}
+
 }
 
 void AsChip8::cls(){
 	for(uint16_t i = 0; i < SCREEN_SIZE; ++i){
 		screen_mem[i] = 0;
 	}
+	update_screen = true;
 }
 
 void AsChip8::ret(){
@@ -88,26 +113,31 @@ void AsChip8::xor_V(uint8_t x, uint8_t y){
 }
 
 void AsChip8::add_V(uint8_t x, uint8_t y){
-	V[x] += V[y];
+	V[0xF] = 0;
+	int sum = (int)V[x] + (int)V[y];
+	V[x] = sum & 0xFF;
+	if(sum > 255){
+		V[0xF] = 1;
+	}
 }
 
 void AsChip8::sub_V(uint8_t x, uint8_t y){
 	V[0xF] = V[x] > V[y] ? 1 : 0;
-	V[x] = V[y] - V[x];
+	V[x] = V[x] - V[y];
 }
 
 void AsChip8::shift_right(uint8_t x){
-	V[0xF] = V[x]%2 != 0 ? 1 : 0;
+	V[0xF] = ((V[x] % 2) != 0) ? 1 : 0;
 	V[x] >>= 1;
 }
 
 void AsChip8::subn_V(uint8_t x, uint8_t y){
 	V[0xF] = V[y] > V[x] ? 1 : 0;
-	V[x] -= V[y];
+	V[x] = V[y] - V[x];
 }
 
 void AsChip8::shift_left(uint8_t x){
-	V[0xF] = V[x]&0x80 == 0x80 ? 1 : 0;
+	V[0xF] = ((V[x] & 0x80) == 0x80) ? 1 : 0;
 	V[x] <<= 1;
 }
 
@@ -121,14 +151,15 @@ void AsChip8::load_I(uint16_t mem){
 }
 
 void AsChip8::jump_with_offset(uint16_t offset){
-	program_counter = V[0] + offset;
+	program_counter = (uint16_t) V[0] + offset;
 }
 
 void AsChip8::random_number(uint8_t x, uint8_t imm){
-		V[x] = (rand() % 256) % imm; 
+		V[x] = (rand() % 256) & imm; 
 }
 
 void AsChip8::draw(uint8_t x, uint8_t y, uint8_t n){
+	update_screen = true;
 	V[0xF] = 0;
 	uint8_t byte;
 	uint8_t bit;
@@ -167,6 +198,7 @@ void AsChip8::wait_for_key(uint8_t x){
 	while(!is_pressed){
 		for(uint8_t i = 0; i < BUTTON_NUM; ++i){
 			if(pressed[i] == 1){
+				V[x] = i;	
 				is_pressed = true;
 			}
 		}
@@ -182,11 +214,11 @@ void AsChip8::load_ST_V(uint8_t x){
 }
 		
 void AsChip8::add_I_V(uint8_t x){
-	I+=V[x];
+	I += (uint16_t)V[x];
 }
 
 void AsChip8::load_char(uint8_t x){
-	I = V[x];
+	I = FONT_SIZE * (uint16_t)V[x];
 }
 
 void AsChip8::load_bcd(uint8_t x){
@@ -200,13 +232,13 @@ void AsChip8::load_bcd(uint8_t x){
 
 void AsChip8::store_registers(uint8_t x){
 	for(uint8_t i = 0; i <= x; ++i){
-		memory[I + i] = V[i];
+		memory[I + (uint16_t) i] = V[i];
 	}
 }
 
 void AsChip8::load_registers(uint8_t x){
 	for(uint8_t i = 0; i <= x; ++i){
-		V[i] = memory[I + i];
+		V[i] = memory[I + (uint16_t) i];
 	}
 }
 
@@ -215,92 +247,189 @@ void AsChip8::print_state(){
 		printf("V[0x%01x]=0x%02x\n", i, V[i]);
 	}
 	printf("I=0x%04x\n", I);
+	/*
+	printf("DT=0x%02x\n", delay_timer);
+	printf("ST=0x%02x\n", delay_timer);
+	*/
+	printf("SP=0x%02x\n", stack_pointer);
 }
 
+void AsChip8::update_timers(){
+	if(delay_timer > 0) --delay_timer;
+	if(sound_timer > 0){
+		printf("beep\n");
+		--sound_timer;
+	}
+}
+
+//I basically lifted this other way of doing the decoding from https://github.com/dmatlack/chip8
 void AsChip8::decode_and_execute(uint16_t instruction){
-			if(instruction == 0x00E0){
-				cls();
-			} else if (instruction == 0x00EE){
-				ret();
-			} else if ((instruction & 0xF000) == 0xF000){
-				uint8_t arg	= (instruction & 0x0F00)>>8;
-				if((instruction & 0xF065) == 0xF065){
-					load_registers(arg);
-				} else if ((instruction & 0xF055) == 0xF055){
-					store_registers(arg);
-				} else if ((instruction & 0xF033) == 0xF033){
-					load_bcd(arg);
-				} else if ((instruction & 0xF029) == 0xF029){
-					load_char(arg);
-				} else if ((instruction & 0xF01E) == 0xF01E){
-					add_I_V(arg);
-				} else if ((instruction & 0xF018) == 0xF018){
-					load_ST_V(arg);
-				} else if ((instruction & 0xF015) == 0xF015){
-					load_DT_V(arg);
-				} else if ((instruction & 0xF00A) == 0xF00A){
-					wait_for_key(arg);
-				} else if ((instruction & 0xF007) == 0xF007){
-					load_V_DT(arg);
-				} else {
-					print_state();
-				}
-			} else if ((instruction & 0xE000) == 0xE000){
-				uint8_t arg	= (instruction & 0x0F00)>>8;
-				if((instruction & 0xE0A1) == 0xE0A1){
-					skip_not_pressed(arg);	
-				} else if ((instruction & 0xE09E) == 0xE09E){
-					skip_pressed(arg);
-				} else {
-					print_state();
-				}
-			} else if ((instruction & 0xD000) == 0xD000){
-				//printf("draw: 0x%04x 0x%04x 0x%04x\n",(instruction & 0x0F00)>>8, (instruction & 0x00F0)>>4, instruction & 0x000F);
-				draw((instruction & 0x0F00)>>8, (instruction & 0x00F0)>>4, instruction & 0x000F);
-			} else if ((instruction & 0xC000) == 0xC000){
-				random_number((instruction & 0x0F00)>>8, (instruction & 0x00FF));
-			} else if ((instruction & 0xB000) == 0xB000){
-				jump_with_offset(instruction & 0x0FFF);
-			} else if ((instruction & 0xA000) == 0xA000){
-				load_I(instruction & 0x0FFF);
-			} else if ((instruction & 0x9000) == 0x9000){
-				skip_not_equal_V((instruction & 0x0F00)>>8, (instruction & 0x00F0)>>4);
-			} else if ((instruction & 0x8000) == 0x8000){
-				uint8_t arg1 = (instruction & 0x0F00)>>8;
-				uint8_t arg2 = (instruction & 0x00F0)>>4;
-				if((instruction & 0x000E) == 0x000E){
-					shift_left(arg1);
-				} else if ((instruction & 0x0007) == 0x0007){
-					subn_V(arg1, arg2);
-				} else if ((instruction & 0x0006) == 0x0006){
-					shift_right(arg1);
-				} else if ((instruction & 0x0005) == 0x0005){
-					sub_V(arg1, arg2);
-				} else if ((instruction & 0x0004) == 0x0004){
-					add_V(arg1, arg2);
-				} else if ((instruction & 0x0003) == 0x0003){
-					xor_V(arg1, arg2);
-				} else if ((instruction & 0x0002) == 0x0002){
-					and_V(arg1, arg2);
-				} else if ((instruction & 0x0001) == 0x0001){
-					or_V(arg1, arg2);
-				} else {
-					printf("load_V 0x%02x 0x%02x\n", arg1, arg2);
-					load_V(arg1, arg2);
-				}
-			} else if ((instruction & 0x7000) == 0x7000){
-				add((instruction & 0x0F00)>>8, (instruction & 0x00FF));				
-			} else if ((instruction & 0x6000) == 0x6000){
-				load((instruction & 0x0F00)>>8, (instruction & 0x00FF));				
-			} else if ((instruction & 0x5000) == 0x5000){
-				skip_equal_V((instruction & 0x0F00)>>8, (instruction & 0x00F0)>>4);
-			} else if ((instruction & 0x4000) == 0x4000){
-				skip_not_equal((instruction & 0x0F00)>>8, instruction & 0x00FF);
-			} else if ((instruction & 0x3000) == 0x3000){
-				skip_equal((instruction & 0x0F00)>>8, instruction & 0x00FF);
-			} else if ((instruction & 0x2000) == 0x2000){
-				call(instruction & 0x0FFF);
-			} else if ((instruction & 0x1000) == 0x1000){
-				jp(instruction & 0x0FFF);
+	uint8_t x = (instruction >> 8) & 0x000F; //xFxx
+	uint8_t y = (instruction >> 4) & 0x000F; //xxFx
+	uint8_t lead = (instruction >> 12) & 0x000F; //Fxxx
+	uint8_t n = instruction & 0x000F; //xxxF
+	uint8_t kk = instruction & 0x00FF; //xxFF
+	uint16_t nnn = instruction & 0x0FFF; //xFFF
+
+	switch(lead){
+		case 0x0:
+			switch(nnn){
+				case 0x0E0:
+					//printf("CLS\n");
+					cls();
+					break;
+				case 0x0EE:
+					//printf("RET\n");
+					ret();
+					break;
+				//default:
+					//printf("Error! 0x%04x\n", instruction);
 			}
+			break;
+		case 0x1:
+			//printf("JUMP 0x%04x\n", nnn);
+			jp(nnn);
+			break;
+		case 0x2:
+			//printf("CALL 0x%04x\n", nnn);
+			call(nnn);
+			break;
+		case 0x3:
+			//printf("SE 0x%02x 0x%02x\n", x, kk);
+			skip_equal(x, kk);
+			break;
+		case 0x4:
+			//printf("SNE 0x%02x 0x%02x\n", x, kk);
+			skip_not_equal(x, kk);
+			break;
+		case 0x5:
+			//printf("SE_V 0x%02x 0x%02x\n", V[x], V[y]);
+			skip_equal_V(x, y);
+			break;
+		case 0x6:
+			//printf("LD 0x%02x 0x%02x\n", x, kk);
+			load(x, kk);
+			break;
+		case 0x7:
+			//printf("ADD 0x%02x 0x%02x\n", x, kk);
+			add(x, kk);
+			break;
+		case 0x8:
+			switch(n){
+				case 0x0:
+					//printf("LD_V 0x%02x 0x%02x\n", x, y);
+					load_V(x, y);
+					break;
+				case 0x1:
+					//printf("OR_V 0x%02x 0x%02x\n", x, y);
+					or_V(x,y);
+					break;
+				case 0x2:
+					//printf("AND_V 0x%02x 0x%02x\n", x, y);
+					and_V(x, y);
+					break;
+				case 0x3:
+					//printf("XOR_V 0x%02x 0x%02x\n", x, y);
+					xor_V(x, y);
+					break;
+				case 0x4:
+					//printf("ADD_V 0x%02x 0x%02x\n", x, y);
+					add_V(x, y);
+					break;
+				case 0x5:
+					//printf("SUB_V 0x%02x 0x%02x\n", x, y);
+					sub_V(x, y);
+					break;
+				case 0x6:
+					//printf("SHR_V 0x%02x 0x%02x\n", x, y);
+					shift_right(x);
+					break;
+				case 0x7:
+					//printf("SUBN_V 0x%02x 0x%02x\n", x, y);
+					subn_V(x, y);
+					break;
+				case 0xE:
+					//printf("SHL_V 0x%02x 0x%02x\n", x, y);
+					shift_left(x);
+					break;
+				//default:
+					//printf("Error! 0x%04x\n", instruction);
+			}
+			break;
+		case 0x9:
+			//printf("SNE_V 0x%02x 0x%02x\n", x, y);
+			skip_not_equal_V(x, y);
+			break;
+		case 0xA:
+			//printf("LDI 0x%04x\n", nnn);
+			load_I(nnn);
+			break;
+		case 0xB:
+			//printf("JP_OFF 0x%04x\n", nnn);
+			jump_with_offset(nnn);
+			break;
+		case 0xC:
+			//printf("RND 0x%02x 0x%02x\n", x, kk);
+			random_number(x, kk);
+			break;
+		case 0xD:
+			//printf("DRW 0x%02x 0x%02x 0x%02x\n", x, y, n);
+			draw(x, y, n);
+			break;
+		case 0xE:
+			switch(kk){
+				case 0x9E:
+					//printf("SP 0x%02x\n", x);
+					skip_pressed(x);
+					break;
+				case 0xA1:
+					//printf("SNP 0x%02x\n", x);
+					skip_not_pressed(x);
+					break;
+				//default:
+					//printf("Error! 0x%04x\n", instruction);
+			}
+			break;
+		case 0xF:
+			switch(kk){
+				case 0x07:
+					//printf("LD V DT 0x%02x\n", x);
+					load_V_DT(x);
+					break;
+				case 0x0A:
+					//printf("WFK 0x%02x\n", x);
+					wait_for_key(x);
+					break;
+				case 0x15:
+					//printf("LD DT V 0x%02x\n", x);
+					load_DT_V(x);
+					break;
+				case 0x18:
+					//printf("LD ST V 0x%02x\n", x);
+					load_ST_V(x);
+					break;
+				case 0x1E:
+					//printf("ADD I V 0x%02x\n", x);
+					add_I_V(x);
+					break;
+				case 0x29:
+					//printf("LD CHR 0x%02x\n", x);
+					load_char(x);
+					break;
+				case 0x33:
+					//printf("LD BCD 0x%02x\n", x);
+					load_bcd(x);
+					break;
+				case 0x55:
+					//printf("STR REG 0x%02x\n", x);
+					store_registers(x);
+					break;
+				case 0x65:
+					//printf("LD REG 0x%02x\n", x);
+					load_registers(x);
+					break;
+				//default:
+					//printf("Error! 0x%04x\n", instruction);
+			}
+	}
 }

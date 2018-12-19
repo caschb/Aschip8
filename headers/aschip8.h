@@ -8,6 +8,8 @@
 #define MEM_SIZE 4096
 #define STACK_SIZE 16
 #define BUTTON_NUM 16
+#define FONTSET_LEN 16
+#define FONT_SIZE 5
 
 
 class AsChip8{
@@ -22,6 +24,7 @@ class AsChip8{
 		uint8_t pressed[BUTTON_NUM];
 	public:
 		Display display;
+		bool update_screen;
 		uint16_t program_counter;
 		uint8_t memory[MEM_SIZE];
 		AsChip8(const char *);
@@ -188,6 +191,8 @@ class AsChip8{
 		Read registers V0 through Vx from memory starting at location I.
 		The interpreter reads values from memory starting at location I into registers V0 through Vx.*/
 		void load_registers(uint8_t);
+
+		void update_timers();
 
 		void decode_and_execute(uint16_t);
 
