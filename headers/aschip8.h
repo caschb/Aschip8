@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "display.h"
+#include "key_handler.h"
 
 #define REGISTERS 16
 #define MEM_SIZE 4096
@@ -24,6 +25,7 @@ class AsChip8{
 		uint8_t pressed[BUTTON_NUM];
 	public:
 		Display display;
+		KeyHandler key_handler;
 		bool update_screen;
 		uint16_t program_counter;
 		uint8_t memory[MEM_SIZE];

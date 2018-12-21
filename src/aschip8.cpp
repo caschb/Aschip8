@@ -4,9 +4,10 @@
 #include <cstdio>
 
 #include "aschip8.h"
+#include "key_handler.h"
 #include "display.h"
 
-AsChip8::AsChip8(const char * filename) : I(0), delay_timer(0), sound_timer(0), program_counter(0x200), stack_pointer(0), display(&screen_mem[0]), update_screen(false){
+AsChip8::AsChip8(const char * filename) : I(0), delay_timer(0), sound_timer(0), program_counter(0x200), stack_pointer(0), display(&screen_mem[0]), update_screen(false), key_handler(&pressed[0]){
 	for(uint8_t i = 0; i < REGISTERS; ++i){
 		V[i] = 0;	
 	}
@@ -127,8 +128,8 @@ void AsChip8::sub_V(uint8_t x, uint8_t y){
 }
 
 void AsChip8::shift_right(uint8_t x){
-	V[0xF] = ((V[x] % 2) != 0) ? 1 : 0;
-	V[x] >>= 1;
+	V[0xF] = V[x] % 2;
+	V[x] /= 2;
 }
 
 void AsChip8::subn_V(uint8_t x, uint8_t y){
@@ -138,7 +139,7 @@ void AsChip8::subn_V(uint8_t x, uint8_t y){
 
 void AsChip8::shift_left(uint8_t x){
 	V[0xF] = ((V[x] & 0x80) == 0x80) ? 1 : 0;
-	V[x] <<= 1;
+	V[x] *= 2;
 }
 
 void AsChip8::skip_not_equal_V(uint8_t x, uint8_t y){
@@ -197,6 +198,7 @@ void AsChip8::wait_for_key(uint8_t x){
 	bool is_pressed = false;
 	while(!is_pressed){
 		for(uint8_t i = 0; i < BUTTON_NUM; ++i){
+			key_handler.handle_events();
 			if(pressed[i] == 1){
 				V[x] = i;	
 				is_pressed = true;
