@@ -17,7 +17,9 @@ Display::Display(const uint8_t * screen_memory){
 Display::~Display(){
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
-	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	if(SDL_WasInit(SDL_INIT_VIDEO)){
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	}
 }
 
 void Display::draw(){
@@ -26,7 +28,7 @@ void Display::draw(){
 	int y_pos;
 	for(int i = 0; i < SCREEN_ROWS; ++i){
 		for(int j = 0; j < SCREEN_COLS; ++j){
-			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 			x_pos = j;
 			y_pos = i * SCREEN_COLS;
 			rect.x = x_pos * scale;
@@ -34,7 +36,7 @@ void Display::draw(){
 			rect.w = scale;
 			rect.h = scale;
 			if(display[x_pos + y_pos] == 1){
-				SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+				SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 			} 
 			SDL_RenderFillRect(renderer, &rect);
 		}

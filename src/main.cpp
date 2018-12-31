@@ -1,12 +1,19 @@
 #include "aschip8.h"
 #include <unistd.h>
 #include <ctime>
+#include <iostream>
+
+const int FRAMES_PER_SECOND = 240;
+const float FRAME_DURATION = 1.0/FRAMES_PER_SECOND;
 
 int main(int argc, char *argv[]){
 	AsChip8 aschip8(argv[1]);
 	uint16_t instruction;
 	time_t start = time(NULL);
 	time_t end;
+
+	int fps = SDL_GetTicks();
+
 	bool exit = false;
 	while(!exit){
 		instruction = aschip8.memory[aschip8.program_counter] << 8 | aschip8.memory[aschip8.program_counter+1];
@@ -24,6 +31,11 @@ int main(int argc, char *argv[]){
 			aschip8.update_timers();
 			start = time(NULL);
 		}
+
+		if(SDL_GetTicks() - fps < FRAME_DURATION*1000){
+			SDL_Delay(FRAME_DURATION * 1000 - (SDL_GetTicks() - fps));
+		}
+		fps = SDL_GetTicks();
 	}
 	aschip8.key_handler.clear();
 	return 0;
