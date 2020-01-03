@@ -194,7 +194,9 @@ class AsChip8{
 		The interpreter reads values from memory starting at location I into registers V0 through Vx.*/
 		void load_registers(uint8_t);
 
-		void update_timers();
+		bool update_delay_timer();
+
+		void update_sound_timer();
 
 		void decode_and_execute(uint16_t);
 

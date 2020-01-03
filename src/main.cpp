@@ -26,16 +26,9 @@ int main(int argc, char *argv[]){
 			aschip8.display.draw();
 			aschip8.update_screen = false;
 		}
-		end = time(NULL);
-		if(difftime(end, start) >= 1){
-			aschip8.update_timers();
-			start = time(NULL);
+		while(aschip8.update_delay_timer()){
+			SDL_Delay(16);
 		}
-
-		if(SDL_GetTicks() - fps < FRAME_DURATION*1000){
-			SDL_Delay(FRAME_DURATION * 1000 - (SDL_GetTicks() - fps));
-		}
-		fps = SDL_GetTicks();
 	}
 	aschip8.key_handler.clear();
 	return 0;

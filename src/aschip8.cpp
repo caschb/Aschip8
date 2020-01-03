@@ -256,8 +256,14 @@ void AsChip8::print_state(){
 	printf("SP=0x%02x\n", stack_pointer);
 }
 
-void AsChip8::update_timers(){
-	if(delay_timer > 0) --delay_timer;
+bool AsChip8::update_delay_timer(){
+	if(delay_timer == 0)
+		return false;
+	--delay_timer;
+	return true;
+}
+
+void AsChip8::update_sound_timer(){
 	if(sound_timer > 0){
 		printf("beep\n");
 		--sound_timer;
