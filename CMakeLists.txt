@@ -1,9 +1,7 @@
-cmake_minimum_required(VERSION 3.0)
-project(AsChip8)
+cmake_minimum_required(VERSION 3.19.0)
+
+project(AsChip8 VERSION 0.5 LANGUAGES C CXX)
+
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIR})
-include_directories(headers)
-file(GLOB SOURCES "src/*.cpp")
-add_executable(aschip8 ${SOURCES})
-target_link_libraries(aschip8 ${SDL2_LIBRARY})
+
+add_subdirectory(code)
