@@ -7,18 +7,19 @@
 
 #include "SDL.h"
 
-class Display{
-	private:
-		const uint8_t * display;
-		SDL_Window * window;
-		SDL_Renderer * renderer;
-		SDL_Rect rect;
-		uint8_t pix_size;
-		uint8_t scale;
-	public:
-		Display(const uint8_t *);
-		~Display();
-		void draw();
+class Display {
+private:
+  const uint8_t *display;
+  SDL_Window *window;
+  SDL_Renderer *renderer;
+  SDL_Rect rect;
+  uint8_t pix_size;
+  uint8_t scale;
+
+public:
+  Display(const uint8_t *);
+  ~Display();
+  void draw();
 };
 
 #endif
