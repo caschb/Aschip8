@@ -1,6 +1,7 @@
 #ifndef KEY_HANDLER_H
 #define KEY_HANDLER_H
-#include "SDL.h"
+#include <SDL_keycode.h>
+#include <cstdint>
 
 class KeyHandler {
 private:

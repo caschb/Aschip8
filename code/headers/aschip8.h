@@ -1,9 +1,8 @@
 #ifndef ASCHIP8_H
 #define ASCHIP8_H
 #include <cstdint>
-
-#include "display.h"
-#include "key_handler.h"
+#include <display.h>
+#include <key_handler.h>
 
 #define REGISTERS 16
 #define MEM_SIZE 4096

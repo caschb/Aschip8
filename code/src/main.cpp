@@ -1,6 +1,6 @@
-#include "aschip8.h"
+#include <SDL.h>
+#include <aschip8.h>
 #include <ctime>
-#include <iostream>
 #include <unistd.h>
 
 const int FRAMES_PER_SECOND = 240;

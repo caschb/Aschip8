@@ -1,5 +1,5 @@
-#include "key_handler.h"
-#include "SDL.h"
+#include <SDL.h>
+#include <key_handler.h>
 
 KeyHandler::KeyHandler(uint8_t *keys) : keys(keys) {}
 

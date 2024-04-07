@@ -5,7 +5,8 @@
 #define SCREEN_COLS 64
 #define SCREEN_SIZE (SCREEN_ROWS * SCREEN_COLS)
 
-#include "SDL.h"
+#include <SDL_render.h>
+#include <SDL_video.h>
 
 class Display {
 private:

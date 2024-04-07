@@ -1,7 +1,6 @@
-#include "SDL.h"
+#include <SDL.h>
 #include <cstdint>
-
-#include "display.h"
+#include <display.h>
 
 Display::Display(const uint8_t *screen_memory) {
   display = screen_memory;

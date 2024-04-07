@@ -1,11 +1,10 @@
+#include <aschip8.h>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
-
-#include "aschip8.h"
-#include "display.h"
-#include "key_handler.h"
+#include <display.h>
+#include <key_handler.h>
 
 AsChip8::AsChip8(const char *filename)
     : I(0), delay_timer(0), sound_timer(0), program_counter(0x200),
