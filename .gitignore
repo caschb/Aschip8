@@ -1,6 +1,7 @@
 /bin
 /.idea
 /cmake-build-debug/
+*.cache
 # Prerequisites
 *.d
 
