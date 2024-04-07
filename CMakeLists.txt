@@ -6,19 +6,23 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+option(CMAKE_COMPILE_WARNING_AS_ERROR OFF)
 
-set(USE_CLANG_TIDY OFF)
+option(USE_CLANG_TIDY OFF)
 if(USE_CLANG_TIDY)
   find_program(FOUND_CLANG_TIDY clang-tidy)
   if(FOUND_CLANG_TIDY)
     message(STATUS "Enabling clang-tidy")
-    set (CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*, cppcoreguidelines-*)
+    set (CMAKE_CXX_CLANG_TIDY clang-tidy;
+      -checks=-*,cppcoreguidelines-*;
+      -warnings-as-errors=*;
+      )
   else()
     message(STATUS "Didn't find clang-tidy")
   endif()
 endif()
 
-set(USE_CPPCHECK OFF)
+option(USE_CPPCHECK OFF)
 if(USE_CPPCHECK)
   find_program(FOUND_CPPCHECK cppcheck)
   if(FOUND_CPPCHECK)
