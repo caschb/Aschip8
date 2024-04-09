@@ -1,9 +1,12 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#define SCREEN_ROWS 32
-#define SCREEN_COLS 64
-#define SCREEN_SIZE (SCREEN_ROWS * SCREEN_COLS)
+#include <cstdint>
+
+constexpr uint32_t screen_rows = 32;
+constexpr uint32_t screen_cols = 64;
+constexpr uint32_t screen_size = screen_rows * screen_cols;
+constexpr uint8_t scale = 5;
 
 #include <SDL_render.h>
 #include <SDL_video.h>
@@ -14,8 +17,6 @@ private:
   SDL_Window *window;
   SDL_Renderer *renderer;
   SDL_Rect rect;
-  uint8_t pix_size;
-  uint8_t scale;
 
 public:
   Display(const uint8_t *);

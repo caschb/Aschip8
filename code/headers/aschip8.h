@@ -1,33 +1,36 @@
 #ifndef ASCHIP8_H
 #define ASCHIP8_H
+#include <array>
 #include <cstdint>
 #include <display.h>
 #include <key_handler.h>
 
-#define REGISTERS 16
-#define MEM_SIZE 4096
-#define STACK_SIZE 16
-#define BUTTON_NUM 16
-#define FONTSET_LEN 16
-#define FONT_SIZE 5
+constexpr uint32_t registers = 16;
+constexpr uint32_t mem_size = 4096;
+constexpr uint32_t stack_size = 16;
+constexpr uint32_t button_num = 16;
+constexpr uint32_t fontset_len = 16;
+constexpr uint32_t font_size = 5;
 
 class AsChip8 {
 private:
-  uint8_t V[REGISTERS];
+  std::array<uint8_t, registers> V;
+  std::array<uint8_t, screen_size> screen_mem;
+  std::array<uint16_t, stack_size> stack;
+  std::array<uint8_t, button_num> pressed;
+
   uint16_t I;
-  uint8_t screen_mem[SCREEN_SIZE];
   uint8_t delay_timer;
   uint8_t sound_timer;
-  uint16_t stack[STACK_SIZE];
   uint8_t stack_pointer;
-  uint8_t pressed[BUTTON_NUM];
 
 public:
+  std::array<uint8_t, mem_size> memory;
+
   Display display;
   KeyHandler key_handler;
   bool update_screen;
   uint16_t program_counter;
-  uint8_t memory[MEM_SIZE];
   AsChip8(const char *);
 
   /*00E0 - Clear the display*/

@@ -4,10 +4,9 @@
 
 Display::Display(const uint8_t *screen_memory) {
   display = screen_memory;
-  scale = 5;
 
   SDL_InitSubSystem(SDL_INIT_VIDEO);
-  SDL_CreateWindowAndRenderer(SCREEN_COLS * scale, SCREEN_ROWS * scale,
+  SDL_CreateWindowAndRenderer(screen_cols * scale, screen_rows * scale,
                               SDL_WINDOW_RESIZABLE, &window, &renderer);
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
@@ -26,11 +25,11 @@ void Display::draw() {
 
   int x_pos;
   int y_pos;
-  for (int i = 0; i < SCREEN_ROWS; ++i) {
-    for (int j = 0; j < SCREEN_COLS; ++j) {
+  for (int i = 0; i < screen_rows; ++i) {
+    for (int j = 0; j < screen_cols; ++j) {
       SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
       x_pos = j;
-      y_pos = i * SCREEN_COLS;
+      y_pos = i * screen_cols;
       rect.x = x_pos * scale;
       rect.y = i * scale;
       rect.w = scale;

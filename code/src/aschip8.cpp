@@ -10,21 +10,11 @@ AsChip8::AsChip8(const char *filename)
     : I(0), delay_timer(0), sound_timer(0), program_counter(0x200),
       stack_pointer(0), display(&screen_mem[0]), update_screen(false),
       key_handler(&pressed[0]) {
-  for (uint8_t i = 0; i < REGISTERS; ++i) {
-    V[i] = 0;
-  }
-  for (uint16_t i = program_counter; i < MEM_SIZE; ++i) {
-    memory[i] = 0;
-  }
-  for (uint16_t i = 0; i < SCREEN_SIZE; ++i) {
-    screen_mem[i] = 0;
-  }
-  for (uint8_t i = 0; i < STACK_SIZE; ++i) {
-    stack[i] = 0;
-  }
-  for (uint8_t i = 0; i < BUTTON_NUM; ++i) {
-    pressed[i] = 0;
-  }
+  V.fill(0);
+  memory.fill(0);
+  screen_mem.fill(0);
+  stack.fill(0);
+  pressed.fill(0);
   srand(time(NULL));
   FILE *program = fopen(filename, "rb");
   int i = 0;
@@ -50,15 +40,13 @@ AsChip8::AsChip8(const char *filename)
       0xf0, 0x80, 0xf0, 0x80, 0x80  /*F*/
   };
 
-  for (int i = 0; i < FONT_SIZE * FONTSET_LEN; ++i) {
+  for (int i = 0; i < font_size * fontset_len; ++i) {
     memory[i] = font_set[i];
   }
 }
 
 void AsChip8::cls() {
-  for (uint16_t i = 0; i < SCREEN_SIZE; ++i) {
-    screen_mem[i] = 0;
-  }
+  screen_mem.fill(0);
   update_screen = true;
 }
 
@@ -152,8 +140,8 @@ void AsChip8::draw(uint8_t x, uint8_t y, uint8_t n) {
   for (int i = 0; i < n; ++i) {
     byte = memory[I + i];
     for (int j = 0; j < 8; ++j) {
-      x_val = (V[x] + (7 - j)) % SCREEN_COLS;
-      y_val = ((V[y] + i) % SCREEN_ROWS) * SCREEN_COLS;
+      x_val = (V[x] + (7 - j)) % screen_cols;
+      y_val = ((V[y] + i) % screen_rows) * screen_cols;
       bit = (byte >> j) & 0x1;
       if (bit == 1 && screen_mem[x_val + y_val] == 1) {
         V[0xF] = 1;
@@ -178,7 +166,7 @@ void AsChip8::load_V_DT(uint8_t x) { V[x] = delay_timer; }
 void AsChip8::wait_for_key(uint8_t x) {
   bool is_pressed = false;
   while (!is_pressed) {
-    for (uint8_t i = 0; i < BUTTON_NUM; ++i) {
+    for (uint8_t i = 0; i < button_num; ++i) {
       key_handler.handle_events();
       if (pressed[i] == 1) {
         V[x] = i;
@@ -194,7 +182,7 @@ void AsChip8::load_ST_V(uint8_t x) { sound_timer = V[x]; }
 
 void AsChip8::add_I_V(uint8_t x) { I += (uint16_t)V[x]; }
 
-void AsChip8::load_char(uint8_t x) { I = FONT_SIZE * (uint16_t)V[x]; }
+void AsChip8::load_char(uint8_t x) { I = font_size * (uint16_t)V[x]; }
 
 void AsChip8::load_bcd(uint8_t x) {
   uint8_t hundreds = V[x] / 100;
@@ -218,7 +206,7 @@ void AsChip8::load_registers(uint8_t x) {
 }
 
 void AsChip8::print_state() {
-  for (int i = 0; i < REGISTERS; ++i) {
+  for (int i = 0; i < registers; ++i) {
     printf("V[0x%01x]=0x%02x\n", i, V[i]);
   }
   printf("I=0x%04x\n", I);
